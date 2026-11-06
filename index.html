@@ -15,6 +15,8 @@ main{max-width:1180px!important;margin:-60px auto 45px!important}.panel{border-r
 @media(max-width:700px){header{padding-bottom:70px!important}.panel{padding:17px!important}.filters,.stats,#cards{grid-template-columns:1fr!important}.toolbar{align-items:flex-start!important;flex-direction:column}}
 </style><style>
 .official-header{height:78px;background:#fff;display:flex;align-items:center;gap:14px;padding:0 max(20px,calc((100vw - 1180px)/2));border-bottom:1px solid #dfe9e5;box-shadow:0 4px 18px #153f3210;position:relative;z-index:5}.official-mark{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#096149,#14836a);color:#f7d476;border:2px solid #e0b954;font-weight:800;direction:ltr}.official-copy{display:flex;flex-direction:column;line-height:1.45}.official-copy strong{color:#0c604b;font-size:17px}.official-copy span{color:#66756f;font-size:13px}.official-program{margin-right:auto;text-align:left;display:flex;flex-direction:column;line-height:1.45}.official-program strong{color:#173d35;font-size:15px}.official-program span{color:#7a8782;font-size:12px}.comments{border-right:0!important;background:transparent!important;padding:0!important;margin-top:14px!important}.comment-sheet{border:1px solid #e2eae7;border-radius:14px;overflow:hidden;background:#fff}.comment-head{display:flex;align-items:center;gap:10px;background:linear-gradient(90deg,#edf7f3,#fbfdfc);padding:11px 13px;border-bottom:1px solid #e0ebe6;color:#0d6b54;font-weight:800;font-size:13px}.comment-head .icon{width:27px;height:27px;border-radius:8px;background:#0d6b54;color:#fff;display:grid;place-items:center}.comment-items{padding:12px}.comment-item{display:grid;grid-template-columns:29px 1fr;gap:9px;align-items:start;padding:9px 0;border-bottom:1px dashed #e2e9e6;line-height:1.8;color:#3d4b47;font-size:13px}.comment-item:last-child{border-bottom:0}.comment-number{width:25px;height:25px;border-radius:50%;display:grid;place-items:center;background:#fff3d5;color:#916000;font-weight:800;font-size:11px;margin-top:2px}.no-comment{padding:13px;color:#71807b;background:#fafcfb;border-radius:10px;text-align:center}@media(max-width:700px){.official-header{height:auto;padding:11px 15px;flex-wrap:wrap}.official-program{width:100%;margin-right:62px;text-align:right}.official-mark{width:44px;height:44px}}
+</style><style>
+.comment-item span:last-child{unicode-bidi:plaintext;text-align:start;overflow-wrap:anywhere;word-break:normal}.comment-items{max-height:520px;overflow:auto;scrollbar-width:thin}.comment-number{flex:0 0 auto}.comment-sheet{direction:rtl}.comment-item{direction:rtl}.comment-item:has(span:last-child[dir="ltr"]){direction:ltr}
 </style></head><body><div class="official-header">
   <div class="official-mark">SC</div>
   <div class="official-copy">
@@ -28,10 +30,31 @@ main{max-width:1180px!important;margin:-60px auto 45px!important}.panel{border-r
 </div>
 <header><h1>متابعة ملاحظات توصيفات المقررات</h1><p>برنامج علوم الحاسب · العام الجامعي 2026–2027</p></header><main><section class="panel"><div class="filters"><div><label for="staff">اختر اسم عضو هيئة التدريس</label><select id="staff"><option value="">اختر الاسم...</option></select></div><div><label for="search">بحث في المقررات</label><input id="search" placeholder="الكود أو اسم المقرر"></div></div><div class="stats"><div class="stat"><strong id="total">0</strong>عدد المقررات</div><div class="stat"><strong id="needs">0</strong>تحتاج تعديلات</div><div class="stat"><strong id="approved">0</strong>معتمدة</div></div><div class="toolbar"><strong id="heading">يرجى اختيار الاسم</strong><small id="updated"></small></div><div id="cards"><div class="empty">جاري تحميل البيانات...</div></div></section></main><footer>صفحة عامة لعرض ملاحظات توصيفات المقررات.</footer><script>
 let DATA=[];const staff=document.getElementById('staff'),search=document.getElementById('search'),cards=document.getElementById('cards');function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}function cls(s){if((s||'').includes('تعديلات'))return'warn';if((s||'').includes('اعتماد'))return'ok';if((s||'').includes('لم تبدأ'))return'bad';return''}function formatComments(text){
- const raw=String(text||'').replace(/^\s*["']|["']\s*$/g,'').trim();
- const parts=raw.split(/\n+|(?=\s*\d+[\)\-\.])|(?=\s*[•▪–—])/).map(x=>x.replace(/^\s*(?:\d+[\)\-\.]|[•▪–—])\s*/, '').trim()).filter(Boolean);
- const items=(parts.length?parts:[raw]).map((part,i)=>`<div class="comment-item"><span class="comment-number">${i+1}</span><span>${esc(part)}</span></div>`).join('');
- return `<div class="comments"><div class="comment-sheet"><div class="comment-head"><span class="icon">✓</span><span>الملاحظات والإجراءات المطلوبة</span></div><div class="comment-items">${items}</div></div></div>`;
+ const raw=String(text||'')
+   .replace(/^\s*["']|["']\s*$/g,'')
+   .replace(/\\n/g,'\n')
+   .replace(/\r\n?/g,'\n')
+   .trim();
+ if(!raw) return '<div class="no-comment">لا توجد ملاحظات مسجلة</div>';
+
+ // Split only at real line breaks or an explicit numbered/bulleted item.
+ // Do not split decimals, CLO/PLO numbers, years, editions, filenames, or isolated 0/2 values inside sentences.
+ let lines=raw.split(/\n+/).map(x=>x.trim()).filter(Boolean);
+ let items=[];
+ for(const line of lines){
+   const chunks=line.split(/(?=\s(?:\d{1,2}[.)-]|[•▪●–—])\s+)/g)
+     .map(x=>x.trim()).filter(Boolean);
+   for(let chunk of chunks){
+     chunk=chunk.replace(/^(?:\d{1,2}[.)-]|[•▪●–—])\s+/,'').trim();
+     if(!chunk) continue;
+     // Remove spreadsheet artifacts that are only a zero or a small naked count.
+     if(/^(?:0|1|2)$/u.test(chunk)) continue;
+     items.push(chunk);
+   }
+ }
+ if(!items.length) items=[raw];
+ const body=items.map((part,i)=>`<div class="comment-item"><span class="comment-number">${i+1}</span><span>${esc(part)}</span></div>`).join('');
+ return `<div class="comments"><div class="comment-sheet"><div class="comment-head"><span class="icon">✓</span><span>الملاحظات والإجراءات المطلوبة</span></div><div class="comment-items">${body}</div></div></div>`;
 }
 function render(){let n=staff.value,q=search.value.trim().toLowerCase(),a=DATA.filter(x=>x.staff===n&&(!q||(x.code+' '+x.course).toLowerCase().includes(q)));total.textContent=a.length;needs.textContent=a.filter(x=>x.review.includes('تعديلات')).length;approved.textContent=a.filter(x=>x.review.includes('اعتماد')).length;heading.textContent=n||'يرجى اختيار الاسم';if(!n){cards.innerHTML='<div class="empty">اختر اسمًا لعرض المقررات والملاحظات.</div>';return}if(!a.length){cards.innerHTML='<div class="empty">لا توجد مقررات مطابقة.</div>';return}cards.innerHTML=a.map(x=>`<article class="card"><div class="top"><div><span class="code">${esc(x.code)}</span><h2>${esc(x.course)}</h2></div><span class="status ${cls(x.review)}">${esc(x.review||'لم تبدأ')}</span></div><div class="meta"><span class="tag">الترم: ${esc(x.term||'-')}</span><span class="tag">التصنيف: ${esc(x.category||'-')}</span><span class="tag">الاستلام: ${esc(x.receipt||'-')}</span>${x.reviewDate?`<span class="tag">تاريخ المراجعة: ${esc(x.reviewDate)}</span>`:''}</div><details ${x.comments?'':'open'}><summary>${x.comments?'عرض الملاحظات والإجراءات المطلوبة':'لا توجد ملاحظات مسجلة'}</summary>${x.comments?formatComments(x.comments):'<div class="no-comment">لا توجد ملاحظات مسجلة</div>'}</details></article>`).join('')}async function load(){try{const r=await fetch('https://api.github.com/repos/Gehadtaher-hub/cs-course-review-comments/issues/1?ts='+Date.now(),{cache:'no-store',headers:{'Accept':'application/vnd.github+json'}});if(!r.ok)throw Error(r.status);const issue=await r.json();DATA=JSON.parse(issue.body||'[]');DATA=DATA.map(x=>({...x,staff:x.staff==='أ.د. عبد المنعم عبدالحميد عبد الحمد مجاهد'?'أ.د. عبد المنعم عبدالحميد عبد الحميد مجاهد':x.staff}));[...new Set(DATA.map(x=>x.staff))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'ar')).forEach(n=>{const o=document.createElement('option');o.value=o.textContent=n;staff.appendChild(o)});updated.textContent='تم تحميل أحدث البيانات تلقائيًا من ملف المتابعة';cards.innerHTML='<div class="empty">اختر اسمًا لعرض المقررات والملاحظات.</div>'}catch(e){cards.innerHTML='<div class="empty">تعذر تحميل البيانات. أعد تحميل الصفحة.</div>'}}staff.addEventListener('change',render);search.addEventListener('input',render);load();
 </script></body></html>
