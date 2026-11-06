@@ -1,11 +1,6 @@
-# CS Course Review Comments
+# Staff Course Review Website
 
-Public Arabic staff-facing site.
+The site loads current JSON from GitHub Issue #1, which Power Automate updates from the SharePoint Excel table.
 
-## Publish with GitHub Pages
-1. Upload all files to a public GitHub repository.
-2. Settings > Pages > Deploy from a branch.
-3. Select `main` and `/ (root)`.
-
-## Automatic update
-Use Power Automate to replace `data.json` from the Excel table `CourseReviewTable`. The website fetches `data.json` on every page load.
+Data endpoint:
+https://api.github.com/repos/Gehadtaher-hub/cs-course-review-comments/issues/1
