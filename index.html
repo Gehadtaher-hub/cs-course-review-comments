@@ -72,9 +72,8 @@ revisionForm.addEventListener('submit',async e=>{
  if(REVISION_FLOW_URL.includes('PASTE_YOUR_')){msg.textContent='يجب إضافة رابط Power Automate داخل ملف index.html أولًا.';msg.className='revision-message error';return;}
  const btn=document.getElementById('revisionSubmit');btn.disabled=true;btn.textContent='جارٍ الإرسال...';msg.textContent='';
  try{
-  const response=await fetch(REVISION_FLOW_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify({staff:staff.value,code:activeRevisionCourse.code,status:selected.value,notes:document.getElementById('revisionNotes').value.trim()})});
-  if(!response.ok){const detail=await response.text().catch(()=> '');throw new Error('HTTP '+response.status+' '+detail);}
-  msg.textContent='تم تسجيل التحديث بنجاح.';msg.className='revision-message ok';
+  await fetch(REVISION_FLOW_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify({staff:staff.value,code:activeRevisionCourse.code,status:selected.value,notes:document.getElementById('revisionNotes').value.trim()})});
+  msg.textContent='تم إرسال التحديث. سيظهر في ملف المتابعة بعد ثوانٍ.';msg.className='revision-message ok';
   setTimeout(closeRevisionModal,1400);
  }catch(err){msg.textContent='تعذر إرسال التحديث. تأكد من تشغيل التدفق ومن صحة رابط Power Automate.';msg.className='revision-message error';console.error('Revision submission failed:',err)}finally{btn.disabled=false;btn.textContent='إرسال التحديث'}
 });
